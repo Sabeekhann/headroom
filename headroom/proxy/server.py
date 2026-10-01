@@ -5853,6 +5853,8 @@ def _settings_runtime_values(config: ProxyConfig) -> dict[str, Any]:
         if not hasattr(config, attribute):
             continue
         value = getattr(config, attribute)
+        if setting.secret and value in (None, ""):
+            continue
         if isinstance(value, set | frozenset):
             value = ",".join(sorted(value))
         values[setting.key] = value
