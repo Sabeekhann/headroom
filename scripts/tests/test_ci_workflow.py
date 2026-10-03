@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import yaml
+
 
 def test_sharded_ci_verifies_offline_huggingface_cache_before_pytest() -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
@@ -21,6 +23,7 @@ def test_sharded_ci_uploads_only_explicit_coverage_reports() -> None:
 
     assert "files: coverage-${{ matrix.shard }}.xml" in upload_step
     assert "disable_search: true" in upload_step
+    assert "if: ${{ !cancelled() }}" in upload_step.split("uses:", 1)[0]
 
 
 def test_ci_checks_documented_environment_variables_for_source_changes() -> None:
@@ -37,3 +40,10 @@ def test_docs_workflow_checks_environment_variables_for_documentation_changes() 
     assert "- 'README.md'" in workflow
     assert "- 'SECURITY.md'" in workflow
     assert "python scripts/ci/verify_documented_env_vars.py" in workflow
+
+
+def test_sharded_ci_disables_process_killing_hard_watchdog() -> None:
+    """Pytest must report a stalled test instead of being hard-exited."""
+    workflow = yaml.safe_load(Path(".github/workflows/ci.yml").read_text(encoding="utf-8"))
+
+    assert workflow["jobs"]["test"]["env"]["HEADROOM_HARD_WATCHDOG_SECS"] == "0"
